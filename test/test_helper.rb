@@ -43,5 +43,6 @@ class User < ActiveRecord::Base; end
 class ViewSpec < MiniTest::Spec
   include ActiveSupport::Testing::SetupAndTeardown
   include ActionView::TestCase::Behavior
+  include ActionView::Helpers
 end
 MiniTest::Spec.register_spec_type(/Rendering$/, ViewSpec)

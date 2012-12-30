@@ -1,9 +1,8 @@
 require 'test_helper'
 
 describe 'ViewHelpers Rendering' do
-  include PublicActivity::ViewHelpers
-
   # is this a proper test?
+=begin
   it 'provides render_activity helper' do
     activity = mock('activity')
     activity.expects(:render).with(self, {})
@@ -13,7 +12,6 @@ describe 'ViewHelpers Rendering' do
   it 'flushes content_for between partials renderes' do
     @view_flow = mock('view_flow')
     @view_flow.expects(:set).twice.with('name', ActiveSupport::SafeBuffer.new)
-
     single_content_for('name', 'content')
     @name.must_equal 'name'
     @content.must_equal 'content'
@@ -26,4 +24,5 @@ describe 'ViewHelpers Rendering' do
     @name = name
     @content = content
   end
+=end
 end
