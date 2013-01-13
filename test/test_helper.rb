@@ -90,11 +90,9 @@ class ViewSpec < MiniTest::Spec
 end
 MiniTest::Spec.register_spec_type(/Rendering$/, ViewSpec)
 
-if PublicActivity::Config.orm == :mongoid && ENV['PA_PURGE']
-  # takes under half a second for the whole suite
-  MiniTest::Spec.class_eval do
-    before :each do
-      Mongoid::Config.purge!
-    end
+MiniTest::Spec.class_eval do
+  after :each do
+    ActiveRecord::Base.subclasses.each(&:delete_all) if PublicActivity::Config.orm == :active_record
+    Mongoid::Config.purge! if PublicActivity::Config.orm == :mongoid
   end
 end

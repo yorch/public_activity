@@ -4,6 +4,7 @@ describe PublicActivity::Deactivatable do
   def disable; PublicActivity.enabled = false; end
   def enable; PublicActivity.enabled  = true; end
   before(:each) { enable }
+  after(:all) { enable }
 
   describe 'functionality of the gem' do
     describe 'class-wide' do 

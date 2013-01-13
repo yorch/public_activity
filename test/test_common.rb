@@ -4,12 +4,16 @@ describe PublicActivity::Common do
   describe 'creating activities' do
     describe 'from global tier of variables' do
       describe 'key' do
-        it 'allows pure value'
-        it 'resolves symbol value'
-        it 'resolves proc value'
+        it('forbids pure value') { ->{article(key: 'asd').new.tap{|a|a.save!;a.create_activity}}.must_raise PublicActivity::NoKeyProvided }
       end
       describe 'owner' do
-        it 'allows pure value'
+        let(:user) do User.create; end
+        it 'allows pure value' do
+          article(owner: user).new.tap do |a|
+            a.save!
+            a.activities.last.owner.must_equal(user)
+          end
+        end
         it 'resolves symbol value'
         it 'resolves proc value'
       end
