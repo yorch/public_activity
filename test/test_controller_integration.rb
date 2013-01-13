@@ -6,18 +6,20 @@ class StoringController < ActionView::TestCase::TestController
 end
 
 describe PublicActivity::StoreController do
-  it 'stores controller' do
-    controller = StoringController.new
-    PublicActivity.set_controller(controller)
-    controller.must_be_same_as PublicActivity.instance_eval { class_variable_get(:@@controllers)[Thread.current.object_id] }
-    controller.must_be_same_as PublicActivity.get_controller
-  end
+  describe String.new do
+    let(:controller) { StoringController.new }
 
-  it 'stores controller with a filter in controller' do
-    controller = StoringController.new
-    controller._process_action_callbacks.select {|c| c.kind == :before}.map(&:filter).must_include :store_controller_for_public_activity
-    controller.instance_eval { store_controller_for_public_activity }
-    controller.must_be_same_as PublicActivity.class_eval { class_variable_get(:@@controllers)[Thread.current.object_id] }
+    it 'stores controller' do
+      PublicActivity.set_controller(controller)
+      PublicActivity.instance_eval { class_variable_get(:@@controllers)[Thread.current.object_id] }.must_be_same_as controller
+      PublicActivity.get_controller.must_be_same_as controller
+    end
+
+    it 'stores controller with a filter in controller' do
+      controller._process_action_callbacks.select {|c| c.kind == :before}.map(&:filter).must_include :store_controller_for_public_activity
+      controller.instance_eval { store_controller_for_public_activity }
+      controller.must_be_same_as PublicActivity.class_eval { class_variable_get(:@@controllers)[Thread.current.object_id] }
+    end
   end
 
   it 'stores controller in a threadsafe way' do

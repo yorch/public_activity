@@ -12,6 +12,9 @@ describe PublicActivity::Tracked do
     before(:each) { subject.activity(options) }
     let(:activity){ subject.save; subject.activities.last }
 
+    # The reason subject doesn't reset p_a variables after save is that a copy
+    # of it is saved, I think.
+
     specify { subject.activity_key.must_be_same_as    options[:key] }
     specify { activity.key.must_equal                 options[:key] }
 
@@ -56,84 +59,6 @@ describe PublicActivity::Tracked do
     art.activities.last.owner_id.must_equal nil
   end
 
-  describe 'custom fields' do
-    describe 'global' do
-      it 'should resolve symbols' do
-        a = article(nonstandard: :name).new(name: 'Symbol resolved')
-        a.save
-        a.activities.last.nonstandard.must_equal 'Symbol resolved'
-      end
-
-      it 'should resolve procs' do
-        a = article(nonstandard: proc {|_, model| model.name}).new(name: 'Proc resolved')
-        a.save
-        a.activities.last.nonstandard.must_equal 'Proc resolved'
-      end
-    end
-
-    describe 'instance' do
-      it 'should resolve symbols' do
-        a = article.new(name: 'Symbol resolved')
-        a.activity nonstandard: :name
-        a.save
-        a.activities.last.nonstandard.must_equal 'Symbol resolved'
-      end
-
-      it 'should resolve procs' do
-        a = article.new(name: 'Proc resolved')
-        a.activity nonstandard: proc {|_, model| model.name}
-        a.save
-        a.activities.last.nonstandard.must_equal 'Proc resolved'
-      end
-    end
-  end
-
-  it 'should reset instance options on successful create_activity' do
-    a = article.new
-    a.activity key: 'test', params: {test: 1}
-    a.save
-    a.activities.count.must_equal 1
-    ->{a.create_activity}.must_raise PublicActivity::NoKeyProvided
-    a.activity_params.must_be_empty
-    a.activity key: 'asd'
-    a.create_activity
-    ->{a.create_activity}.must_raise PublicActivity::NoKeyProvided
-  end
-
-  it 'should not accept global key option' do
-    # this example tests the lack of presence of sth that should not be here
-    a = article(key: 'asd').new
-    a.save
-    ->{a.create_activity}.must_raise PublicActivity::NoKeyProvided
-    a.activities.count.must_equal 1
-  end
-
-  describe 'disabling functionality' do
-    it 'allows for global disable' do
-      PublicActivity.enabled = false
-      activity_count_before = PublicActivity::Activity.count
-
-      @article = article().new
-      @article.save
-      PublicActivity::Activity.count.must_equal activity_count_before
-
-      PublicActivity.enabled = true
-    end
-
-    it 'allows for class-wide disable' do
-      activity_count_before = PublicActivity::Activity.count
-
-      klass = article
-      klass.public_activity_off
-      @article = klass.new
-      @article.save
-      PublicActivity::Activity.count.must_equal activity_count_before
-
-      klass.public_activity_on
-      @article.save
-      PublicActivity::Activity.count.must_be :>, activity_count_before
-    end
-  end
 
   describe '#tracked' do
     subject { article(options) }
@@ -265,49 +190,6 @@ describe PublicActivity::Tracked do
       specify { subject.activity_recipient_global.must_equal :test }
       specify { subject.activity_owner_global.must_equal :test2    }
       specify { subject.activity_params_global.must_equal(a: 'b')  }
-    end
-  end
-
-  describe 'activity hooks' do
-    subject { s = article; s.activity_hooks = {:test => hook}; s }
-    let(:hook) { lambda {} }
-
-    it 'retrieves hooks' do
-      assert_same hook, subject.get_hook(:test)
-    end
-
-    it 'retrieves hooks by string keys' do
-      assert_same hook, subject.get_hook('test')
-    end
-
-    it 'returns nil when no matching hook is present' do
-      nil.must_be_same_as subject.get_hook(:nonexistent)
-    end
-
-    it 'allows hooks to decide if activity should be created' do
-      subject.tracked
-      @article = subject.new(:name => 'Some Name')
-      PublicActivity.set_controller(mock('controller'))
-      pf = proc { |model, controller|
-        controller.must_be_same_as PublicActivity.get_controller
-        model.name.must_equal 'Some Name'
-        false
-      }
-      pt = proc { |model, controller|
-        controller.must_be_same_as PublicActivity.get_controller
-        model.name.must_equal 'Other Name'
-        true # this will save the activity with *.update key
-      }
-      @article.class.activity_hooks = {:create => pf, :update => pt, :destroy => pt}
-
-      @article.activities.must_be_empty
-      @article.save # create
-      @article.name = 'Other Name'
-      @article.save # update
-      @article.destroy # destroy
-
-      @article.activities.count.must_equal 2
-      @article.activities.first.key.must_equal 'article.update'
     end
   end
 end
